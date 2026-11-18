@@ -169,6 +169,12 @@ function indbFood(x){
     kcal:n.kcal*s,protein:n.protein*s,carbs:n.carbs*s,fat:n.fat*s,fiber:n.fiber*s,sugar:n.sugar*s,sodium:n.sodium*s});
 }
 
+// "MAGGI MASALA NOODLES" -> "Maggi Masala Noodles"; drops junk like "- Maggi - Maggi"
+function cleanName(raw){
+  let n=String(raw||'').replace(/^[\s\-–•.]+/,'').replace(/\s+/g,' ').trim();
+  const parts=n.split(/\s+-\s+/);if(parts.length>1&&new Set(parts.map(p=>p.toLowerCase())).size===1)n=parts[0];
+  return n.replace(/\b([A-Z])([A-Z]+)\b/g,(m,a,b)=>a+b.toLowerCase());
+}
 async function openFoodFacts(q){
   const u=new URL('https://search.openfoodfacts.org/search');
   u.searchParams.set('q',q);u.searchParams.set('page_size','30');u.searchParams.set('langs','en');
@@ -177,13 +183,16 @@ async function openFoodFacts(q){
   if(!r.ok)throw new Error('OFF '+r.status);
   const d=await r.json();
   const seen=new Set();
-  return (d.hits||[]).filter(h=>{const n=h.nutriments||{};return h.product_name&&num(n['energy-kcal_100g'])>0}).map(h=>{
+  const list=(d.hits||[]).filter(h=>{const n=h.nutriments||{};return h.product_name&&num(n['energy-kcal_100g'])>0}).map(h=>{
     const n=h.nutriments,brand=Array.isArray(h.brands)?h.brands[0]:String(h.brands||'').split(',')[0];
-    const name=String(h.product_name).trim().replace(/\b([A-Z])([A-Z]+)\b/g,(m,a,b)=>a+b.toLowerCase());
-    return {india:(h.countries_tags||[]).includes('en:india'),food:normalizeFood({id:'off-'+h.code,name:brand&&!name.toLowerCase().includes(String(brand).toLowerCase())?`${name} (${brand})`:name,
+    const name=cleanName(h.product_name);
+    return {india:(h.countries_tags||[]).includes('en:india'),food:normalizeFood({id:'off-'+h.code,name:brand&&!name.toLowerCase().includes(String(brand).toLowerCase().trim())?`${name} (${brand})`:name,
       source:'Open Food Facts',category:'Packaged food',basis:'per 100 g',grams:100,kcal:n['energy-kcal_100g'],protein:n.proteins_100g,carbs:n.carbohydrates_100g,fat:n.fat_100g,fiber:n.fiber_100g,sugar:n.sugars_100g,sodium:num(n.sodium_100g)*1000})};
-  }).filter(x=>{const k=x.food.name.toLowerCase()+'|'+x.food.kcal;if(seen.has(k))return false;seen.add(k);return true})
-    .sort((a,b)=>b.india-a.india).slice(0,10).map(x=>x.food);
+  }).filter(x=>{const k=x.food.name.toLowerCase();if(!x.food.name||x.food.name.length<3||seen.has(k))return false;seen.add(k);return true})
+    ;
+  // prefer products sold in India; only show other countries' products if India has fewer than 3
+  const india=list.filter(x=>x.india);
+  return (india.length>=3?india:list.sort((a,b)=>b.india-a.india)).slice(0,8).map(x=>x.food);
 }
 
 async function usda(q){
@@ -219,7 +228,7 @@ module.exports=async(req,res)=>{
   const [sb,off,us]=await Promise.allSettled([supabase(q),openFoodFacts(q),usda(q)]);
   for(const [n,r] of [['Supabase',sb],['Open Food Facts',off],['USDA',us]])if(r.status==='rejected')console.error(n,'search failed:',r.reason?.message);
   const val=r=>r.status==='fulfilled'?r.value:[];
-  const groups=[['Your Supabase foods',val(sb)],['INDB — Indian Nutrient Databank',indb],['FitFirst quick list',quick],['Katori dataset (CC BY 4.0)',katori],['Open Food Facts (ODbL)',val(off)],['USDA FoodData Central',val(us)]];
+  const groups=[['Your Supabase foods',val(sb)],['INDB — Indian Nutrient Databank',indb],['FitFirst quick list',quick],['Katori dataset (CC BY 4.0)',katori],['USDA FoodData Central',val(us)],['Open Food Facts (ODbL)',val(off)]];
   // rank by how well the name matches, keep source order as tie-breaker, cap list
   const ql=norm(q).trim(),rank=f=>{const n=norm(f.name).trim();return n===ql?0:n.startsWith(ql)?1:(' '+n+' ').includes(' '+ql+' ')?2:3};
   const all=[],ids=new Set();groups.forEach(([,list],gi)=>list.forEach((f,i)=>{if(f.name&&!ids.has(f.id)){ids.add(f.id);all.push({f,k:rank(f)*1000+gi*100+Math.min(i,99)})}}));

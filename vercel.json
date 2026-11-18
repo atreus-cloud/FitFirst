@@ -1,6 +1,8 @@
 {
   "functions": {
     "api/scan.js": { "maxDuration": 60 },
+    "api/estimate.js": { "maxDuration": 60 },
+    "api/health.js": { "maxDuration": 30 },
     "api/foods/search.js": { "maxDuration": 20 }
   }
 }

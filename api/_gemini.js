@@ -32,12 +32,15 @@ function extractJson(text){
 async function generateJson(parts,{timeoutMs=45000,maxOutputTokens=8192}={}){
   const key=getKey();
   if(!key) return {ok:false,code:503,error:'AI features are not set up yet. Add GEMINI_API_KEY in Vercel → Settings → Environment Variables, then redeploy.'};
-  const payload=JSON.stringify({contents:[{role:'user',parts}],generationConfig:{temperature:0.15,maxOutputTokens,responseMimeType:'application/json'}});
+  // Low thinking keeps answers fast (the default 'latest' Flash thinks a lot and can take 25 s+).
+  const reqBody=thinking=>JSON.stringify({contents:[{role:'user',parts}],generationConfig:{temperature:0.15,maxOutputTokens,responseMimeType:'application/json',...(thinking?{thinkingConfig:{thinkingLevel:'low'}}:{})}});
   let lastErr=null;
   try{
     for(const model of MODELS){
       const url=`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
-      const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:payload,signal:AbortSignal.timeout(timeoutMs)});
+      const call=thinking=>fetch(url,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:reqBody(thinking),signal:AbortSignal.timeout(timeoutMs)});
+      let r=await call(true);
+      if(r.status===400){const t=await r.clone().text();if(/thinking/i.test(t)){console.warn('Model rejected thinkingLevel, retrying without',model);r=await call(false);}}
       if(r.ok){
         const result=await r.json();
         const cand=result.candidates?.[0];
@@ -50,7 +53,8 @@ async function generateJson(parts,{timeoutMs=45000,maxOutputTokens=8192}={}){
       const body=await r.text();
       console.error('Gemini call failed',model,r.status,body.slice(0,1200));
       lastErr={status:r.status,body};
-      const modelProblem=r.status===404||(r.status===400&&/model|not found|not supported for generatecontent/i.test(body)&&!/api key/i.test(body));
+      // try the next model when this one doesn't exist, is overloaded (5xx) or rate-limited (429)
+      const modelProblem=r.status===404||r.status===429||r.status>=500||(r.status===400&&/model|not found|not supported for generatecontent/i.test(body)&&!/api key/i.test(body));
       if(!modelProblem) break;
     }
   }catch(e){

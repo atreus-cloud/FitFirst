@@ -10,7 +10,7 @@ Interpret it as the food most people in India would mean (e.g. "egg maggi" = Mag
 kcal must be consistent with 4*protein + 4*carbs + 9*fat (±15%).
 Return ONLY JSON: {"foods":[{"name":"Egg maggi","serving":"1 pack + 1 egg","grams":280,"kcal":0,"protein_g":0,"carbs_g":0,"fat_g":0,"fiber_g":0}],"note":"short assumption"}.
 If the text is not a food or drink, return {"foods":[],"note":"why"}.`;
-  const r=await generateJson([{text:prompt}],{timeoutMs:25000,maxOutputTokens:4096});
+  const r=await generateJson([{text:prompt}],{timeoutMs:40000,maxOutputTokens:4096});
   if(!r.ok)return res.status(r.code).json({error:r.error});
   const foods=(Array.isArray(r.data.foods)?r.data.foods:[]).slice(0,3).map((f,i)=>{const g=clean(f.grams,3000)||null;const serving=String(f.serving||'1 serving').slice(0,60);
     return {id:'ai-'+Date.now()+'-'+i,name:String(f.name||q).slice(0,80),category:'AI estimate',source:'AI estimate (Gemini)',basis:g&&!/\d\s*g\b/.test(serving)?`${serving} (${Math.round(g)} g)`:serving,grams:g,
