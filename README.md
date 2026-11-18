@@ -11,6 +11,21 @@ FitFirst is a phone-first calorie tracker built as a Vercel static app plus serv
 - Katori dataset importer (CC BY 4.0) for 128 dish/preparation rows, once the CSV is downloaded from the source.
 - Supabase SQL schema and a seed script for FitFirst starter foods.
 
+## v0.5 — real food databases
+Food search now queries real databases in parallel instead of relying on a hand-made list:
+- **INDB (Indian Nutrient Databank)** — 1,014 Indian recipes with real serving sizes (1 idli = 25 g, 1 dosa…), bundled.
+- **Open Food Facts** — packaged foods with label nutrition (e.g. Maggi Masala Noodles 427 kcal/100 g), live, no key.
+- **USDA FoodData Central** — raw ingredients, live. Works without a key via `DEMO_KEY`; add a free `USDA_API_KEY` (api.data.gov/signup) for higher limits.
+- The old hand-entered list stays as a small "FitFirst quick list" for combos no database has (egg maggi, bread omelette).
+- Search results are cached at Vercel's edge for a day. See `data/INDIAN_DATA_SOURCES.md` for attribution and licences.
+
+## v0.4 — better photo logging, bigger food list
+- **New photo scan flow**: big Take photo / From gallery buttons, optional notes for the AI ("2 rotis, cooked in ghee"), meal chips, automatic analysis with a progress animation, then a review screen with the photo, a live meal total, per-item gram steppers and ½× / ¾× / 1½× / 2× portion chips, include/exclude ticks, one-tap database matches, "Add something it missed", and a sticky "Log N items · X kcal" button. Diary entries show the meal photo as a thumbnail.
+- **Clear Gemini errors**: the API now tells you *why* Gemini failed (invalid key, quota, region, permission) and falls back to other Flash models if the configured one is unavailable.
+- **`/api/health?check=1`** asks Google whether your key and model work (no image, no cost).
+- **`POST /api/estimate`**: "✦ Ask AI to estimate" at the bottom of food search, for anything not in the database.
+- **145 starter foods** (was 50) incl. Maggi variants, egg dishes, poha, parotta, Indo-Chinese, chaat, sweets, fruits, drinks — with aliases (maggie, dahi, roti, chai, omelet…) and multi-word search ("maggi egg" finds Egg maggi).
+
 ## v0.3 — app completed (phone-only storage)
 - **Per-day diary**: every entry is saved against its date. Old flat diaries are migrated to today automatically.
 - **Date navigation**: tappable Mon–Sun week strip with ‹ › week arrows, a date picker, and a "Today" jump. Day rings turn green when on target (±10%) and pink when over.
@@ -28,6 +43,8 @@ Next steps if you want them: Supabase Auth + cloud sync of `food_logs`/`weights`
 - `GET /api/health` — reports provider configuration status without exposing secrets.
 - `GET /api/foods/search?q=...` — returns curated entries and optional Supabase, USDA and imported Katori data.
 - `POST /api/scan` — accepts `{ imageBase64, mimeType, notes }` and uses Gemini `generateContent` with image data.
+- `POST /api/estimate` — accepts `{ query }` and returns AI nutrition estimates for a typed food name.
+- `GET /api/health?check=1` — also verifies the Gemini key/model with Google.
 
 ## Vercel environment variables
 Set these only in Vercel Project Settings → Environment Variables. Never put API keys in `index.html` or other client files.
@@ -48,7 +65,7 @@ Set these only in Vercel Project Settings → Environment Variables. Never put A
 ## Supabase setup
 1. Create a Supabase project.
 2. Run `supabase-schema.sql` in SQL Editor.
-3. Optionally run `data/curated-foods-seed.sql` to seed 50 starter foods.
+3. Optionally run `data/curated-foods-seed.sql` to seed the 145 starter foods.
 4. Configure `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in Vercel.
 5. Service-role key stays backend-only. Before implementing cloud user diaries, configure Auth and verify row-level security policies.
 
@@ -58,4 +75,4 @@ Install Node.js and Vercel CLI, then run `vercel dev` in this folder.
 
 
 ## Privacy and estimation
-Photos are uploaded to Gemini only when the user taps Analyze. Portion weights and nutrition fallback values are AI estimates. Database matching is preferred when available. Review the results before saving.
+Photos are uploaded to Gemini only when the user takes or picks a photo in the scan screen. Portion weights and nutrition fallback values are AI estimates. Database matching is preferred when available. Review the results before saving.

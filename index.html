@@ -95,6 +95,30 @@ h1{font-size:29px;letter-spacing:-.7px;margin:23px 0 12px}h2{font-size:21px;marg
 .wrow button{background:none;color:var(--muted);font-size:20px;padding:0 6px}
 .rowbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .calcout{background:#121a15;border:1px solid #2c4535;border-radius:14px;padding:12px;margin:4px 0 12px;font-size:14px}
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0}
+.chip{background:#121216;border:1px solid var(--line);border-radius:99px;padding:8px 12px;font-size:14px;color:var(--white);text-align:left}.chip.on{background:#f4f4f6;color:#111;border-color:#f4f4f6;font-weight:650}.chip.sm{padding:6px 10px;font-size:13px}
+.pickgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin:4px 0 16px}
+.bigpick{background:#121216;border:1px solid var(--line);border-radius:22px;padding:22px 12px;display:flex;flex-direction:column;align-items:center;gap:3px}.bigpick span{font-size:34px}.bigpick b{font-size:16px}.bigpick small{color:var(--muted);font-size:12px}.bigpick:active{background:var(--panel2)}
+.tips{background:#121a15;border:1px solid #2c4535;border-radius:14px;padding:11px 12px;font-size:13px;color:#b9dcc6;margin-top:6px}
+.scanhero{position:relative;border-radius:20px;overflow:hidden;background:#111;margin-top:4px}.scanhero img{display:block;width:100%;max-height:300px;object-fit:cover}
+.scanhero.scanning img{filter:brightness(.6) saturate(.8)}
+.sweep{position:absolute;left:0;right:0;height:70px;top:-70px;background:linear-gradient(transparent,rgba(137,166,244,.45),transparent);animation:sweep 1.8s ease-in-out infinite}
+@keyframes sweep{0%{top:-70px}100%{top:100%}}
+.scanstep{text-align:center;font-weight:650;font-size:17px;margin:16px 0 2px}.center{text-align:center}
+.herototal{position:absolute;left:0;right:0;bottom:0;padding:40px 16px 12px;background:linear-gradient(transparent,#000d);display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}.herototal b{font-size:40px;font-weight:850;letter-spacing:-1.5px}.herototal span{font-weight:600}.herototal small{width:100%;color:#ddd;font-size:13px}
+.sitem{background:#121216;border:1px solid var(--line);border-radius:20px;padding:12px 14px;margin:10px 0;transition:opacity .2s}.sitem.off{opacity:.45}
+.srow{display:flex;align-items:center;gap:10px}.sname{flex:1;min-width:0;cursor:pointer}.sname b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sname small{color:var(--muted);font-size:12px}
+.skcal{text-align:right}.skcal b{font-size:20px;display:block;line-height:1}.skcal small{color:var(--muted);font-size:11px}
+.check{width:28px;height:28px;border-radius:50%;border:2px solid #555;background:none;color:#111;font-weight:900;flex-shrink:0;font-size:14px}.check.on{background:var(--green);border-color:var(--green)}
+.conf{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px;vertical-align:middle;background:var(--pink)}.conf.medium{background:var(--gold)}.conf.high{background:var(--green)}
+.portion{display:flex;align-items:center;gap:8px;margin-top:10px}.portion .round{width:36px;height:36px;font-size:18px}
+.gval{display:flex;align-items:baseline;background:#09090b;border:1px solid var(--line);border-radius:12px;padding:4px 10px}.gval input{width:58px;background:none;border:0;outline:none;font-size:18px;font-weight:700;text-align:right}.gval span{color:var(--muted);margin-left:2px}
+.smacro{flex:1;text-align:right;color:var(--muted);font-size:12px}
+.sdetails{border-top:1px solid #26262c;margin-top:8px;padding-top:8px}
+.addmissing{width:100%;background:none;border:1px dashed #444;border-radius:16px;padding:13px;color:var(--muted);margin:4px 0 10px}
+.stickybar{position:sticky;bottom:calc(-21px - env(safe-area-inset-bottom));margin:10px -21px calc(-21px - env(safe-area-inset-bottom));padding:14px 21px calc(21px + env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--panel) 28%)}
+.mealicon img{width:100%;height:100%;object-fit:cover;border-radius:13px}
+.airow{display:flex;flex-direction:column;gap:8px;align-items:flex-start;padding:14px 0;color:var(--muted);font-size:14px}
 @media(min-width:650px){.wrap{padding:28px}.modalbg{align-items:center}.modal{border-radius:25px}}
 </style>
 </head>
@@ -204,7 +228,7 @@ h1{font-size:29px;letter-spacing:-.7px;margin:23px 0 12px}h2{font-size:21px;marg
     </div>
     <div class="card">
       <h2>Data & privacy</h2>
-      <p class="muted small">Your diary and settings are stored on this phone only. Photos are sent to the vision provider only when you tap Analyze. Export a backup now and then — clearing browser data deletes your diary.</p>
+      <p class="muted small">Food data: INDB – Indian Nutrient Databank, Open Food Facts (ODbL), USDA FoodData Central, plus FitFirst estimates.</p><p class="muted small">Your diary and settings are stored on this phone only. Photos are sent to the vision provider only when you tap Analyze. Export a backup now and then — clearing browser data deletes your diary.</p>
       <div class="rowbtns">
         <button class="btn sm" onclick="exportData()">Export backup</button>
         <button class="btn sm" onclick="document.getElementById('importFile').click()">Import backup</button>
@@ -293,7 +317,7 @@ function renderHome(){
   const entries=dayEntries(view),prev=dayEntries(addDays(view,-1));
   $('mealList').innerHTML=MEALS.map(m=>{
     const items=entries.filter(e=>e.meal===m.id),mt=totals(items),prevItems=prev.filter(e=>e.meal===m.id);
-    const rows=items.map(e=>`<div class="entry" onclick="editEntry('${e.id}')"><div class="mealicon">${e.emoji||'🍽️'}</div><div class="mealcontent"><b>${safe(e.name)}${e.ai?'<span class="tag">AI</span>':''}</b><small>${safe(portionText(e))}</small><small>P ${fmt(e.p*e.qty)}g · C ${fmt(e.c*e.qty)}g · F ${fmt(e.f*e.qty)}g</small></div><div class="kcal">${fmt(e.cal*e.qty)}</div></div>`).join('');
+    const rows=items.map(e=>`<div class="entry" onclick="editEntry('${e.id}')"><div class="mealicon">${/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(e.thumb||'')?`<img src="${e.thumb}" alt="">`:e.emoji||'🍽️'}</div><div class="mealcontent"><b>${safe(e.name)}${e.ai?'<span class="tag">AI</span>':''}</b><small>${safe(portionText(e))}</small><small>P ${fmt(e.p*e.qty)}g · C ${fmt(e.c*e.qty)}g · F ${fmt(e.f*e.qty)}g</small></div><div class="kcal">${fmt(e.cal*e.qty)}</div></div>`).join('');
     const copy=!items.length&&prevItems.length?`<button class="link" onclick="copyMeal('${m.id}')">↻ Copy ${prevItems.length} item${prevItems.length>1?'s':''} from previous day</button>`:'';
     return `<div class="card mealcard"><div class="mealhead"><span style="font-size:20px">${m.emoji}</span><b>${m.label}</b><small>${items.length?fmt(mt.cal)+' kcal':''}</small><button class="round" onclick="openSearch('${m.id}')" aria-label="Add to ${m.label}">＋</button></div>${rows}${copy}</div>`;
   }).join('');
@@ -385,7 +409,7 @@ function chooseDate(){$('modal').innerHTML=`<h2>Go to date</h2><input class="fie
 function normFood(x){
   const basis=x.basis||x.portion||'per 100 g';
   return {name:String(x.name||'Food'),emoji:x.emoji||emojiFor(x.name),basis,grams:num(x.grams)||gramsFromLabel(basis)||null,
-    cal:num(x.cal??x.kcal),p:num(x.p??x.protein),c:num(x.c??x.carbs),f:num(x.f??x.fat),source:x.source||'Food database',custom:!!x.custom};
+    cal:num(x.cal??x.kcal),p:num(x.p??x.protein),c:num(x.c??x.carbs),f:num(x.f??x.fat),source:x.source||'Food database',custom:!!x.custom,aliases:x.aliases||''};
 }
 async function curatedFoods(){
   if(curatedCache)return curatedCache;
@@ -401,8 +425,8 @@ function listHTML(groups){
 async function openSearch(meal){
   sheet={meal:meal||guessMeal()};
   $('modal').innerHTML=`<h2>Add to ${MEALS.find(m=>m.id===sheet.meal).label}</h2>
-    <input id="search" class="field" type="search" placeholder="Search idli, biryani, apple…" autocomplete="off" oninput="searchFood(this.value)">
-    <div class="rowbtns" style="margin:-4px 0 6px"><button class="btn sm" onclick="openCreateFood()">＋ Create food</button><button class="btn sm" onclick="openQuickAdd(sheet.meal)">⚡ Quick add kcal</button><button class="btn sm" onclick="openScan()">📷 Scan</button></div>
+    <input id="search" class="field" type="search" placeholder="Search idli, Maggi, paneer, apple…" autocomplete="off" oninput="searchFood(this.value)">
+    <div class="rowbtns" style="margin:-4px 0 6px"><button class="btn sm" onclick="openCreateFood()">＋ Create food</button><button class="btn sm" onclick="openQuickAdd(sheet.meal)">⚡ Quick add kcal</button><button class="btn sm" onclick="openScan(sheet.meal)">📷 Scan</button></div>
     <div class="results" id="results"><p class="muted">Loading…</p></div><small class="muted" id="sources"></small>`;
   showModal();
   setTimeout(()=>$('search')?.focus(),120);
@@ -414,7 +438,8 @@ async function openSearch(meal){
 function localMatches(q){
   const ql=q.toLowerCase(),seen=new Set(),out=[];
   const pool=[...S.customFoods.map(normFood),...S.recents.map(normFood),...(curatedCache||SEED.map(normFood))];
-  for(const f of pool){const key=f.name.toLowerCase()+'|'+f.source;if(seen.has(key))continue;if(f.name.toLowerCase().includes(ql)){seen.add(key);out.push(f)}}
+  const toks=ql.split(/\s+/).filter(Boolean).map(t=>t.replace(/ie$/,'i'));
+  for(const f of pool){const key=f.name.toLowerCase()+'|'+f.source;if(seen.has(key))continue;const hay=(f.name+' '+(f.aliases||'')).toLowerCase().replace(/ie\b/g,'i');if(toks.every(t=>hay.includes(t))){seen.add(key);out.push(f)}}
   return out.sort((a,b)=>(b.name.toLowerCase().startsWith(ql))-(a.name.toLowerCase().startsWith(ql)));
 }
 function searchFood(q){
@@ -423,14 +448,25 @@ function searchFood(q){
   const local=localMatches(q);box.innerHTML=listHTML([['Matches',local]])+'<p class="muted small">Searching more sources…</p>';
   const seq=++searchSeq;
   debounce=setTimeout(async()=>{
-    let remote=[],providers=[];
-    try{const r=await fetch('/api/foods/search?q='+encodeURIComponent(q));if(r.ok){const d=await r.json();remote=(d.foods||[]).map(normFood);providers=d.providers||[]}}catch(e){}
+    let remote=[],providers=[],failed=false;
+    try{const r=await fetch('/api/foods/search?q='+encodeURIComponent(q));if(r.ok){const d=await r.json();remote=(d.foods||[]).map(normFood);providers=d.providers||[]}else failed=true}catch(e){failed=true}
     if(seq!==searchSeq||!$('results'))return;
     const have=new Set(local.map(f=>f.name.toLowerCase()+'|'+f.source));
     const extra=remote.filter(f=>!have.has(f.name.toLowerCase()+'|'+f.source));
-    $('results').innerHTML=listHTML([['Matches',local],[local.length?'More results':'',extra]]);
-    $('sources').textContent=providers.length?'Sources: '+providers.join(' · '):(remote.length?'':'Offline or no online results — showing saved foods.');
+    $('results').innerHTML=listHTML([['Matches',local],[local.length?'More results':'',extra]])+aiRowHTML(q,!local.length&&!extra.length);
+    $('sources').textContent=providers.length?'Sources: '+providers.join(' · '):(failed?'Offline — showing saved foods only.':'');
   },300);
+}
+function aiRowHTML(q,empty){return `<div class="airow" id="aiRow"><div>${empty?'<b>Not in the database yet.</b> ':''}Can't find it?</div><button class="btn sm" onclick="aiEstimate()">✦ Ask AI to estimate “${safe(q.slice(0,40))}”</button></div>`}
+async function aiEstimate(){
+  const q=$('search')?.value.trim();if(!q)return;const row=$('aiRow');row.innerHTML='<span class="muted">✦ Estimating nutrition…</span>';
+  try{const r=await fetch('/api/estimate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})});let d={};try{d=await r.json()}catch(e){}
+    if(!r.ok)throw Error(d.error||'AI estimate failed');
+    const foods=(d.foods||[]).map(f=>({...normFood(f),ai:false,source:'AI estimate'}));
+    if(!foods.length){row.innerHTML=`<span class="muted">${safe(d.note||'Could not recognise that as a food.')}</span> <button class="btn sm" onclick="openCreateFood()">Create it yourself</button>`;return}
+    const start=pickList.length;pickList.push(...foods);
+    row.outerHTML=`<div class="listlabel">✦ AI estimates — check before logging</div>`+foods.map((f,k)=>foodRow(f,start+k)).join('')+(d.note?`<p class="muted small">${safe(d.note)}</p>`:'');
+  }catch(e){row.innerHTML=`<span class="muted">${safe(e.message==='Failed to fetch'?'No connection.':e.message)}</span>`}
 }
 function pickFood(i){const f=pickList[i];if(f)openFoodSheet(f,{meal:sheet?.meal||guessMeal()})}
 
@@ -511,58 +547,170 @@ function saveQuick(){const cal=num($('qaCal').value);if(cal<=0)return toast('Ent
   persist();render();closeModal();toast('Added')}
 
 /* ---------- Photo scan ---------- */
-function openScan(){
-  const meal=sheet?.meal||guessMeal();
-  $('modal').innerHTML=`<h2>Scan a meal</h2><p class="muted">Take or upload a photo. Gemini identifies foods and estimates portions; you can match each item to the food database and adjust before logging.</p>
-  <input class="field" type="file" accept="image/*" capture="environment" id="mealphoto" onchange="preview(this)">
-  <div id="photoPreview"></div><div id="scanOut"></div>
-  <label class="lbl">Log to<select class="field" id="scanMeal">${MEALS.map(m=>`<option value="${m.id}" ${m.id===meal?'selected':''}>${m.label}</option>`).join('')}</select></label>
-  <button class="primary" id="analyze" disabled onclick="scanImage()">Analyze photo</button>
-  <p class="notice">Your image is sent to Gemini only when you tap Analyze. The API key stays on the server.</p>`;
-  showModal();
+let scan=null;
+const SCAN_STEPS=['Looking at your plate…','Spotting each food…','Estimating portions…','Working out the macros…','Almost there…'];
+let scanTimer=null;
+function openScan(meal){
+  scan={meal:meal||sheet?.meal||guessMeal(),notes:'',status:'idle',items:[],file:null,imgURL:null,thumb:null};
+  drawScan();showModal();
 }
-function preview(i){const f=i.files?.[0];if(!f)return;if(f.size>25*1024*1024){toast('Choose an image under 25 MB');i.value='';return}window.scanFile=f;$('photoPreview').innerHTML=`<img class="preview" src="${URL.createObjectURL(f)}"><p class="muted small">${safe(f.name)} · ${(f.size/1024).toFixed(0)} KB</p>`;$('scanOut').innerHTML='';$('analyze').disabled=false}
-async function imageToBase64(file){const bitmap=await createImageBitmap(file);const max=1440,scale=Math.min(1,max/Math.max(bitmap.width,bitmap.height));const canvas=document.createElement('canvas');canvas.width=Math.round(bitmap.width*scale);canvas.height=Math.round(bitmap.height*scale);canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close?.();return await new Promise((resolve,reject)=>canvas.toBlob(blob=>{if(!blob)return reject(new Error('Could not compress image'));const reader=new FileReader();reader.onload=()=>resolve({base64:String(reader.result).split(',')[1],mimeType:blob.type});reader.onerror=reject;reader.readAsDataURL(blob)},'image/jpeg',.82))}
-function nutritionInputs(n,i){const x=n||{};return `<div class="formgrid"><label>kcal / 100g<input class="field" type="number" step="1" id="nk${i}" value="${Math.round(x.kcal||0)}"></label><label>Protein / 100g<input class="field" type="number" step="0.1" id="np${i}" value="${r1(num(x.protein_g))}"></label><label>Carbs / 100g<input class="field" type="number" step="0.1" id="nc${i}" value="${r1(num(x.carbs_g))}"></label><label>Fat / 100g<input class="field" type="number" step="0.1" id="nf${i}" value="${r1(num(x.fat_g))}"></label></div>`}
-async function scanImage(){
-  const f=window.scanFile;if(!f)return;const b=$('analyze'),out=$('scanOut');b.disabled=true;b.textContent='Analyzing…';out.innerHTML='';
+function mealChips(){return `<div class="chips" id="scanMealChips">${MEALS.map(m=>`<button class="chip ${m.id===scan.meal?'on':''}" onclick="scan.meal='${m.id}';$('scanMealChips').outerHTML=mealChips()">${m.emoji} ${m.label}</button>`).join('')}</div>`}
+function drawScan(){
+  clearInterval(scanTimer);
+  const s=scan,m=$('modal');
+  if(s.status==='idle'){
+    m.innerHTML=`<h2>Scan a meal</h2>
+      <div class="pickgrid">
+        <button class="bigpick" onclick="$('camIn').click()"><span>📷</span><b>Take photo</b><small>Use camera</small></button>
+        <button class="bigpick" onclick="$('galIn').click()"><span>🖼️</span><b>From gallery</b><small>Pick a photo</small></button>
+      </div>
+      <input type="file" accept="image/*" capture="environment" id="camIn" class="hidden" onchange="scanPicked(this)">
+      <input type="file" accept="image/*" id="galIn" class="hidden" onchange="scanPicked(this)">
+      <label class="lbl">Anything the AI should know? <span class="muted">(optional)</span><input class="field" id="scanNotes" value="${safe(s.notes)}" oninput="scan.notes=this.value" placeholder="e.g. 2 rotis, cooked in ghee, half-eaten"></label>
+      <div class="lbl">Log to</div>${mealChips()}
+      <div class="tips">💡 Shoot from above in good light with the whole plate in frame. A hand or spoon in the shot helps with portion size.</div>
+      <p class="muted small" style="margin-top:12px">Your photo is sent to Google Gemini for analysis. Results are estimates; you review everything before it's logged.</p>`;
+    return;
+  }
+  const hero=`<div class="scanhero ${s.status==='loading'?'scanning':''}"><img src="${s.imgURL}" alt="Meal photo">${s.status==='loading'?'<div class="sweep"></div>':''}${s.status==='done'?`<div class="herototal"><b id="scanKcal">0</b><span>kcal</span><small id="scanMacros"></small></div>`:''}</div>`;
+  if(s.status==='loading'){
+    m.innerHTML=`<h2>Analyzing…</h2>${hero}<p class="scanstep" id="scanStep">${SCAN_STEPS[0]}</p><p class="muted small center">Usually takes 5–15 seconds.</p>`;
+    let i=0;scanTimer=setInterval(()=>{i=Math.min(i+1,SCAN_STEPS.length-1);const el=$('scanStep');if(el)el.textContent=SCAN_STEPS[i];else clearInterval(scanTimer)},2600);
+    return;
+  }
+  if(s.status==='error'){
+    m.innerHTML=`<h2>Couldn't analyze that</h2>${hero}<div class="notice" style="margin-top:12px">${safe(s.error)}</div>
+      <div class="rowbtns" style="margin-top:12px"><button class="btn" onclick="runScan()">↻ Try again</button><button class="btn" onclick="scan.status='idle';drawScan()">📷 Different photo</button><button class="btn" onclick="openSearch(scan.meal)">⌕ Search instead</button></div>`;
+    return;
+  }
+  // done
+  m.innerHTML=`<h2>Review your meal</h2>${hero}
+    ${s.mealNotes?`<p class="muted small" style="margin:10px 2px 0">${safe(s.mealNotes)}</p>`:''}
+    <div class="lbl" style="margin-top:12px">Log to</div>${mealChips()}
+    <div id="scanItems">${s.items.map((x,i)=>scanItemHTML(x,i)).join('')}</div>
+    <button class="addmissing" onclick="addScanItem()">＋ Add something it missed</button>
+    ${s.uncertainty?`<p class="muted small">⚠️ ${safe(s.uncertainty)}</p>`:''}
+    <div class="stickybar"><button class="primary" id="scanLog" onclick="logScan()">Log meal</button></div>`;
+  updateScanTotals();
+}
+function confDot(c){return `<span class="conf ${c}"></span>${c} confidence`}
+function scanItemHTML(x,i){
+  const k=itemKcal(x);
+  return `<div class="sitem ${x.include?'':'off'}" id="si${i}">
+    <div class="srow">
+      <button class="check ${x.include?'on':''}" onclick="toggleScanItem(${i})" aria-label="Include">${x.include?'✓':''}</button>
+      <div class="sname" onclick="toggleDetails(${i})"><b>${x.emoji} ${safe(x.name||'New item')}</b><small>${x.manual?'Added by you':confDot(x.confidence)} · ${safe(x.source)}</small></div>
+      <div class="skcal"><b id="sk${i}">${fmt(k)}</b><small>kcal</small></div>
+    </div>
+    <div class="portion">
+      <button class="round" onclick="stepScanG(${i},-1)">−</button>
+      <div class="gval"><input id="sg${i}" type="number" inputmode="numeric" value="${Math.round(x.grams)}" oninput="setScanG(${i},this.value)"><span>g</span></div>
+      <button class="round" onclick="stepScanG(${i},1)">＋</button>
+      <div class="smacro" id="sm${i}">${macroLine(x)}</div>
+    </div>
+    <div class="chips">${[.5,.75,1,1.5,2].map(f=>`<button class="chip sm" onclick="scaleScan(${i},${f})">${f===1?(x.portion?safe(x.portion):'AI estimate'):({.5:'½',.75:'¾',1.5:'1½',2:'2'}[f]+'×')}</button>`).join('')}</div>
+    <button class="link" onclick="toggleDetails(${i})">${x.open?'Hide details ▴':'Rename / better match ▾'}</button>
+    ${x.open?scanDetailsHTML(x,i):''}
+  </div>`;
+}
+function scanDetailsHTML(x,i){
+  const n=x.per100;
+  return `<div class="sdetails">
+    <label class="lbl">Name<div style="display:flex;gap:8px"><input class="field" id="sn${i}" value="${safe(x.name)}" style="margin:7px 0" onkeydown="if(event.key==='Enter')findScanMatches(${i})"><button class="btn sm" onclick="findScanMatches(${i})">Find</button></div></label>
+    <div class="lbl" style="margin-top:6px">Nutrition source</div>
+    <div class="chips" id="smatch${i}">${matchChips(x,i)}</div>
+    <div class="formgrid" style="margin-top:6px">
+      <label>kcal / 100 g<input class="field" type="number" inputmode="decimal" value="${r1(n.kcal)}" oninput="setPer100(${i},'kcal',this.value)"></label>
+      <label>Protein / 100 g<input class="field" type="number" inputmode="decimal" value="${r1(n.p)}" oninput="setPer100(${i},'p',this.value)"></label>
+      <label>Carbs / 100 g<input class="field" type="number" inputmode="decimal" value="${r1(n.c)}" oninput="setPer100(${i},'c',this.value)"></label>
+      <label>Fat / 100 g<input class="field" type="number" inputmode="decimal" value="${r1(n.f)}" oninput="setPer100(${i},'f',this.value)"></label>
+    </div>
+    ${x.notes?`<p class="muted small" style="margin:0 0 8px">AI note: ${safe(x.notes)}</p>`:''}
+    <button class="link" style="color:var(--pink)" onclick="removeScanItem(${i})">Remove item</button>
+  </div>`;
+}
+function matchChips(x,i){
+  if(x.matches==='loading')return '<span class="muted small">Searching database…</span>';
+  const chips=[];
+  if(x.ai)chips.push(`<button class="chip ${x.source==='AI estimate'?'on':''}" onclick="useMatch(${i},-1)">✦ AI estimate · ${fmt(x.ai.kcal)} kcal/100g</button>`);
+  (x.matches||[]).forEach((f,j)=>chips.push(`<button class="chip ${x.matchName===f.name&&x.source===f.source?'on':''}" onclick="useMatch(${i},${j})">${safe(f.name)} · ${fmt(f.per100.kcal)} kcal/100g</button>`));
+  if(Array.isArray(x.matches)&&!x.matches.length)chips.push('<span class="muted small">No database match — edit the name and tap Find.</span>');
+  return chips.join('');
+}
+const itemKcal=x=>x.per100.kcal*x.grams/100;
+function macroLine(x){const q=x.grams/100;return `P ${r1(x.per100.p*q)} · C ${r1(x.per100.c*q)} · F ${r1(x.per100.f*q)}`}
+function updateScanItem(i){const x=scan.items[i];const k=$('sk'+i),m=$('sm'+i);if(k)k.textContent=fmt(itemKcal(x));if(m)m.textContent=macroLine(x);updateScanTotals()}
+function updateScanTotals(){
+  const on=scan.items.filter(x=>x.include&&x.grams>0),t=on.reduce((a,x)=>{const q=x.grams/100;a.k+=x.per100.kcal*q;a.p+=x.per100.p*q;a.c+=x.per100.c*q;a.f+=x.per100.f*q;return a},{k:0,p:0,c:0,f:0});
+  if($('scanKcal'))$('scanKcal').textContent=fmt(t.k);
+  if($('scanMacros'))$('scanMacros').textContent=`P ${fmt(t.p)}g · C ${fmt(t.c)}g · F ${fmt(t.f)}g`;
+  const b=$('scanLog');if(b){b.disabled=!on.length;b.textContent=on.length?`Log ${on.length} item${on.length>1?'s':''} · ${fmt(t.k)} kcal`:'Select at least one item'}
+}
+function redrawScanItem(i){const el=$('si'+i);if(el)el.outerHTML=scanItemHTML(scan.items[i],i);updateScanTotals()}
+function toggleScanItem(i){scan.items[i].include=!scan.items[i].include;redrawScanItem(i)}
+function setScanG(i,v){scan.items[i].touched=true;scan.items[i].grams=Math.max(0,num(v));updateScanItem(i)}
+function stepScanG(i,d){const x=scan.items[i];const step=x.grams>=200?25:10;x.grams=Math.max(0,Math.round(x.grams/step)*step+d*step);$('sg'+i).value=x.grams;updateScanItem(i)}
+function scaleScan(i,f){const x=scan.items[i];x.grams=Math.max(1,Math.round(x.baseGrams*f));$('sg'+i).value=x.grams;updateScanItem(i)}
+function setPer100(i,k,v){scan.items[i].per100[k]=Math.max(0,num(v));if(scan.items[i].source==='AI estimate'&&scan.items[i].ai)scan.items[i].source='Edited';updateScanItem(i)}
+function toggleDetails(i){const x=scan.items[i];x.open=!x.open;redrawScanItem(i);if(x.open&&x.matches==null&&x.name)findScanMatches(i,true)}
+async function findScanMatches(i,auto){
+  const x=scan.items[i],input=$('sn'+i);if(input){x.name=input.value.trim()||x.name;x.emoji=emojiFor(x.name)}
+  if(!x.name)return toast('Type a name first');
+  x.matches='loading';if(!auto)redrawScanItem(i);else{const c=$('smatch'+i);if(c)c.innerHTML=matchChips(x,i)}
+  let list=[];
+  try{const r=await fetch('/api/foods/search?q='+encodeURIComponent(x.name));if(r.ok){const d=await r.json();list=(d.foods||[]).slice(0,4)}}catch(e){}
+  if(!list.length){const local=localMatches(x.name).slice(0,4);list=local.map(f=>({name:f.name,source:f.source,grams:f.grams||100,kcal:f.cal,protein:f.p,carbs:f.c,fat:f.f}))}
+  x.matches=list.filter(f=>num(f.grams)>0||/100 ?g/i.test(f.basis||'')).map(f=>{const s=100/(num(f.grams)||100);return {name:f.name,source:f.source||'Food database',serving:num(f.grams)||100,per100:{kcal:num(f.kcal)*s,p:num(f.protein)*s,c:num(f.carbs)*s,f:num(f.fat)*s}}});
+  if(x.manual&&x.matches.length&&!x.per100.kcal)useMatch(i,0);else redrawScanItem(i);
+}
+function useMatch(i,j){
+  const x=scan.items[i];
+  if(j<0){x.per100={...x.ai};x.source='AI estimate';x.matchName=null}
+  else{const m=x.matches[j];x.per100={...m.per100};if(x.manual&&!x.touched){x.grams=x.baseGrams=Math.round(m.serving)}x.source=m.source;x.matchName=m.name;x.name=m.name;x.emoji=emojiFor(m.name)}
+  redrawScanItem(i);
+}
+function removeScanItem(i){scan.items.splice(i,1);$('scanItems').innerHTML=scan.items.map((x,k)=>scanItemHTML(x,k)).join('');updateScanTotals()}
+function addScanItem(){
+  scan.items.push({name:'',emoji:'🍽️',grams:100,baseGrams:100,per100:{kcal:0,p:0,c:0,f:0},source:'Enter details',include:true,open:true,manual:true,matches:null,confidence:'low'});
+  const i=scan.items.length-1;$('scanItems').insertAdjacentHTML('beforeend',scanItemHTML(scan.items[i],i));updateScanTotals();
+  setTimeout(()=>{$('sn'+i)?.focus();$('si'+i)?.scrollIntoView({behavior:'smooth',block:'center'})},50);
+}
+async function scanPicked(input){
+  const f=input.files?.[0];input.value='';if(!f)return;
+  if(!/^image\//.test(f.type||'image/'))return toast('Please choose a photo');
+  scan.file=f;if(scan.imgURL)URL.revokeObjectURL(scan.imgURL);scan.imgURL=URL.createObjectURL(f);
+  runScan();
+}
+async function prepareImage(file){
+  const bitmap=await createImageBitmap(file);
+  const draw=(max,q)=>{const sc=Math.min(1,max/Math.max(bitmap.width,bitmap.height)),cv=document.createElement('canvas');cv.width=Math.round(bitmap.width*sc);cv.height=Math.round(bitmap.height*sc);cv.getContext('2d').drawImage(bitmap,0,0,cv.width,cv.height);return cv.toDataURL('image/jpeg',q)};
+  // square-ish thumbnail for the diary
+  const tcv=document.createElement('canvas'),side=Math.min(bitmap.width,bitmap.height);tcv.width=tcv.height=96;tcv.getContext('2d').drawImage(bitmap,(bitmap.width-side)/2,(bitmap.height-side)/2,side,side,0,0,96,96);
+  const out={full:draw(1280,.8),thumb:tcv.toDataURL('image/jpeg',.65)};bitmap.close?.();return out;
+}
+async function runScan(){
+  scan.status='loading';drawScan();
   try{
-    const image=await imageToBase64(f);
-    const res=await fetch('/api/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({imageBase64:image.base64,mimeType:image.mimeType})});
+    const img=await prepareImage(scan.file);scan.thumb=img.thumb;
+    const res=await fetch('/api/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({imageBase64:img.full.split(',')[1],mimeType:'image/jpeg',notes:scan.notes})});
     let data={};try{data=await res.json()}catch(e){}
-    if(!res.ok)throw Error(data.error||'Scan failed ('+res.status+')');
-    window.scanResults=(data.items||[]).map(x=>({...x,nutrition:x.estimated_nutrition||{},nutrition_source:'AI estimate',include:true}));
-    if(!window.scanResults.length){out.innerHTML=`<div class="notice">No foods were identified. ${safe(data.meal_notes||'')} Try a clearer image, or use food search.</div>`;return}
-    out.innerHTML=`<h3>Detected foods — review before logging</h3><p class="muted small">${safe(data.meal_notes||'AI visual estimate')}${data.uncertainty?'<br>Uncertainty: '+safe(data.uncertainty):''}</p>`+
-      window.scanResults.map((x,i)=>`<div class="card" id="scanCard${i}"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" checked onchange="window.scanResults[${i}].include=this.checked" style="width:20px;height:20px"><b>${safe(x.name)}</b></label><small class="muted">${safe(x.confidence||'low')} confidence${x.notes?' · '+safe(x.notes):''}</small>
-      <label class="lbl" style="margin-top:8px">Portion (g)<input class="field" type="number" min="1" step="1" id="portion${i}" value="${Math.max(1,Math.round(x.estimated_grams||100))}"></label>
-      <label class="lbl">Search database for a better match</label><div style="display:flex;gap:8px;align-items:center"><input class="field" id="match${i}" value="${safe(x.name)}" style="margin:7px 0"><button class="btn sm" onclick="matchNutrition(${i})">Match</button></div>
-      <div class="muted small" id="nutSource${i}" style="margin:6px 0">Using AI nutrition estimate · per 100 g</div>${nutritionInputs(x.nutrition,i)}</div>`).join('')+
-      `<p class="notice">${safe(data.notice||'Estimates are approximate. Review and adjust portions/macros before saving.')}</p><button class="primary" style="margin-top:10px" onclick="addScanResults()">Add selected foods</button>`;
-    b.classList.add('hidden');
-  }catch(e){out.innerHTML=`<div class="notice">${safe(e.message)}</div>`}
-  finally{b.disabled=false;b.textContent='Analyze photo'}
+    if(!res.ok)throw Error(data.error||(res.status===413?'Photo too large. Try another one.':'Scan failed ('+res.status+'). Please try again.'));
+    if(!scan||scan.status!=='loading')return; // user closed the sheet
+    if(!(data.items||[]).length)throw Error((data.meal_notes||'No food was found in this photo.')+' Try a clearer photo, or search instead.');
+    scan.items=data.items.map(x=>{const n=x.estimated_nutrition||{};const per100={kcal:num(n.kcal),p:num(n.protein_g),c:num(n.carbs_g),f:num(n.fat_g)};const g=Math.max(1,Math.round(num(x.estimated_grams)||100));
+      return {name:x.name,emoji:emojiFor(x.name),portion:x.portion||'',grams:g,baseGrams:g,per100,ai:{...per100},source:'AI estimate',confidence:x.confidence||'low',notes:x.notes||'',include:true,open:false,matches:null}});
+    scan.mealNotes=data.meal_notes||'';scan.uncertainty=data.uncertainty||'';scan.status='done';
+  }catch(e){if(!scan)return;scan.status='error';scan.error=e.message==='Failed to fetch'?'No internet connection. Check your connection and try again.':e.message}
+  drawScan();
 }
-async function matchNutrition(i){
-  const q=$('match'+i).value,box=$('nutSource'+i);box.textContent='Searching nutrition sources…';
-  try{const r=await fetch('/api/foods/search?q='+encodeURIComponent(q));const d=await r.json();const f=d.foods?.[0];
-    if(!f){box.textContent='No database match found. AI estimate kept.';return}
-    const basis=num(f.grams)||100,scale=100/basis;
-    const n={kcal:num(f.kcal)*scale,protein_g:num(f.protein)*scale,carbs_g:num(f.carbs)*scale,fat_g:num(f.fat)*scale};
-    Object.assign(window.scanResults[i],{nutrition:n,nutrition_source:f.source||'Food database',match:f});
-    ['kcal','protein_g','carbs_g','fat_g'].forEach((k,j)=>{$(['nk','np','nc','nf'][j]+i).value=r1(n[k])});
-    box.innerHTML=`Matched: <b>${safe(f.name)}</b> · ${safe(f.source||'Food database')} · scaled from ${basis} g to per 100 g`;
-  }catch(e){box.textContent='Database search failed; AI estimate kept.'}
-}
-function addScanResults(){
-  const meal=$('scanMeal').value;let n=0;const list=S.log[view]=S.log[view]||[];
-  (window.scanResults||[]).forEach((x,i)=>{if(!x.include)return;const grams=Math.max(1,num($('portion'+i).value)||100);
-    list.push({id:uid(),t:Date.now(),name:x.match?.name||x.name,emoji:emojiFor(x.match?.name||x.name),meal,portion:'per 100 g',basisGrams:100,mode:'grams',amount:grams,qty:grams/100,
-      cal:Math.max(0,num($('nk'+i).value)),p:Math.max(0,num($('np'+i).value)),c:Math.max(0,num($('nc'+i).value)),f:Math.max(0,num($('nf'+i).value)),
-      source:x.nutrition_source||'AI estimate',ai:true,confidence:x.confidence});n++});
-  if(!n)return toast('Select at least one food');
-  if(!list.length)delete S.log[view];
-  persist();render();closeModal();toast(`${n} food${n>1?'s':''} added`);
+function logScan(){
+  const list=S.log[view]=S.log[view]||[];let n=0;
+  const thumb=/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(scan.thumb||'')?scan.thumb:null;
+  scan.items.forEach(x=>{if(!x.include||!(x.grams>0)||!x.name)return;
+    list.push({id:uid(),t:Date.now(),name:x.name,emoji:x.emoji||emojiFor(x.name),thumb,meal:scan.meal,portion:'per 100 g',basisGrams:100,mode:'grams',amount:x.grams,qty:x.grams/100,
+      cal:x.per100.kcal,p:x.per100.p,c:x.per100.c,f:x.per100.f,source:x.source,ai:x.source==='AI estimate'||x.source==='Edited',confidence:x.confidence});n++});
+  if(!n)return toast('Select at least one item');
+  const label=MEALS.find(m=>m.id===scan.meal)?.label||'diary';persist();render();closeModal();toast(`${n} item${n>1?'s':''} logged to ${label}`);
 }
 
 /* ---------- Weight ---------- */
@@ -600,7 +748,7 @@ function resetAll(){if(confirm('Delete ALL diary entries, weights, custom foods 
 
 /* ---------- Modal / toast ---------- */
 function showModal(){$('modalbg').style.display='flex'}
-function closeModal(){$('modalbg').style.display='none';$('modal').innerHTML='';sheet=null}
+function closeModal(){$('modalbg').style.display='none';$('modal').innerHTML='';sheet=null;scan=null;clearInterval(scanTimer)}
 let toastTimer;function toast(s){const el=$('toast');el.textContent=s;el.style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.style.display='none',2200)}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 
