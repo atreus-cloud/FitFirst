@@ -115,6 +115,8 @@ h1{font-size:29px;letter-spacing:-.7px;margin:23px 0 12px}h2{font-size:21px;marg
 .conf{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px;vertical-align:middle;background:var(--pink)}.conf.medium{background:var(--gold)}.conf.high{background:var(--green)}
 .portion{display:flex;align-items:center;gap:8px;margin-top:10px}.portion .round{width:36px;height:36px;font-size:18px}
 .gval{display:flex;align-items:baseline;background:#09090b;border:1px solid var(--line);border-radius:12px;padding:4px 10px}.gval input{width:58px;background:none;border:0;outline:none;font-size:18px;font-weight:700;text-align:right}.gval span{color:var(--muted);margin-left:2px}
+.cval{min-width:84px;text-align:center;background:#09090b;border:1px solid var(--line);border-radius:12px;padding:8px 10px;font-size:17px;font-weight:700;white-space:nowrap}.or{color:var(--muted);font-size:12px}
+.chips .smacro{margin-left:auto;align-self:center}
 .smacro{flex:1;text-align:right;color:var(--muted);font-size:12px}
 .sdetails{border-top:1px solid #26262c;margin-top:8px;padding-top:8px}
 .addmissing{width:100%;background:none;border:1px dashed #444;border-radius:16px;padding:13px;color:var(--muted);margin:4px 0 10px}
@@ -325,7 +327,7 @@ function renderHome(){
   }).join('');
   $('insight').innerHTML=insightHTML(t,g,entries.length);
 }
-function portionText(e){if(e.mode==='grams'&&e.amount)return `${r1(e.amount)} g${e.source?' · '+e.source:''}`;const q=r1(num(e.qty));return `${q===1?'':q+' × '}${e.portion||'1 serving'}`}
+function portionText(e){if(e.mode==='grams'&&e.amount)return `${e.countLabel&&Math.abs(e.amount-num(e.countGrams||e.amount))<1?e.countLabel+' · ':''}${r1(e.amount)} g${e.source?' · '+e.source:''}`;const q=r1(num(e.qty));return `${q===1?'':q+' × '}${e.portion||'1 serving'}`}
 function insightHTML(t,g,count){
   if(!count)return view===todayKey()?'Log your first meal to see insights for today.':'Nothing logged for this day.';
   const calLeft=g.cal-t.cal,pLeft=g.p-t.p,diet=S.prefs.diet;
@@ -605,13 +607,21 @@ function scanItemHTML(x,i){
       <div class="sname" onclick="toggleDetails(${i})"><b>${x.emoji} ${safe(x.name||'New item')}</b><small>${x.manual?'Added by you':confDot(x.confidence)} · ${safe(x.source)}</small></div>
       <div class="skcal"><b id="sk${i}">${fmt(k)}</b><small>kcal</small></div>
     </div>
-    <div class="portion">
+    ${x.unitG?`<div class="portion">
+      <button class="round" onclick="stepCount(${i},-1)" aria-label="Less">−</button>
+      <div class="cval" id="sc${i}">${countLabel(x)}</div>
+      <button class="round" onclick="stepCount(${i},1)" aria-label="More">＋</button>
+      <span class="or">or</span>
+      <div class="gval"><input id="sg${i}" type="number" inputmode="numeric" value="${Math.round(x.grams)}" oninput="setScanG(${i},this.value)" aria-label="Grams"><span>g</span></div>
+    </div>
+    <div class="chips">${countChoices(x).map(v=>`<button class="chip sm ${Math.abs(v-x.count)<.01?'on':''}" data-v="${v}" onclick="setCount(${i},${v})">${fmtCount(v)}</button>`).join('')}<span class="smacro" id="sm${i}">${macroLine(x)}</span></div>`
+    :`<div class="portion">
       <button class="round" onclick="stepScanG(${i},-1)">−</button>
       <div class="gval"><input id="sg${i}" type="number" inputmode="numeric" value="${Math.round(x.grams)}" oninput="setScanG(${i},this.value)"><span>g</span></div>
       <button class="round" onclick="stepScanG(${i},1)">＋</button>
       <div class="smacro" id="sm${i}">${macroLine(x)}</div>
     </div>
-    <div class="chips">${[.5,.75,1,1.5,2].map(f=>`<button class="chip sm" onclick="scaleScan(${i},${f})">${f===1?(x.portion?safe(x.portion):'AI estimate'):({.5:'½',.75:'¾',1.5:'1½',2:'2'}[f]+'×')}</button>`).join('')}</div>
+    <div class="chips">${[.5,.75,1,1.5,2].map(f=>`<button class="chip sm" onclick="scaleScan(${i},${f})">${f===1?(x.portion?safe(x.portion):'AI estimate'):({.5:'½',.75:'¾',1.5:'1½',2:'2'}[f]+'×')}</button>`).join('')}</div>`}
     <button class="link" onclick="toggleDetails(${i})">${x.open?'Hide details ▴':'Rename / better match ▾'}</button>
     ${x.open?scanDetailsHTML(x,i):''}
   </div>`;
@@ -651,7 +661,16 @@ function updateScanTotals(){
 }
 function redrawScanItem(i){const el=$('si'+i);if(el)el.outerHTML=scanItemHTML(scan.items[i],i);updateScanTotals()}
 function toggleScanItem(i){scan.items[i].include=!scan.items[i].include;redrawScanItem(i)}
-function setScanG(i,v){scan.items[i].touched=true;scan.items[i].grams=Math.max(0,num(v));updateScanItem(i)}
+const VOLUME_UNITS=/^(katori|bowl|cup|glass|plate|tbsp|tsp|tablespoon|teaspoon|scoop|serving|portion|handful|ladle)s?$/;
+function fmtCount(v){const w=Math.floor(v),f=Math.round((v-w)*4)/4;const fr={0.25:'¼',0.5:'½',0.75:'¾'}[f]||'';return (w||!fr?String(w):'')+fr||'0'}
+function plural(unit,c){if(c<=1||!unit)return unit;if(/^(tbsp|tsp|g|ml)$/.test(unit)||/s$/.test(unit))return unit;if(/(sh|ch|x|ss)$/.test(unit))return unit+'es';if(/[^aeiou]y$/.test(unit))return unit.slice(0,-1)+'ies';return unit+'s'}
+function countLabel(x){return `${fmtCount(x.count)} ${plural(x.unit,x.count)}`}
+function countChoices(x){return VOLUME_UNITS.test(x.unit)?[.5,1,1.5,2]:(x.count%1?[.5,1,2,3]:[...new Set([1,2,3,4,Math.round(x.count)])].sort((a,b)=>a-b).slice(0,5))}
+function setCount(i,v){const x=scan.items[i];x.count=Math.max(.25,Math.round(v*4)/4);x.grams=Math.round(x.count*x.unitG);x.touched=true;
+  $('sc'+i).textContent=countLabel(x);$('sg'+i).value=x.grams;syncChips(i);updateScanItem(i)}
+function stepCount(i,d){const x=scan.items[i];const step=(VOLUME_UNITS.test(x.unit)||x.count+d<1)?.5:1;setCount(i,Math.max(step===.5?.5:1,(Math.round(x.count/step)*step)+d*step))}
+function syncChips(i){const x=scan.items[i];document.querySelectorAll(`#si${i} .chip[data-v]`).forEach(c=>c.classList.toggle('on',Math.abs(num(c.dataset.v)-x.count)<.01))}
+function setScanG(i,v){const x=scan.items[i];x.touched=true;x.grams=Math.max(0,num(v));if(x.unitG){x.count=Math.round(x.grams/x.unitG*4)/4;const c=$('sc'+i);if(c)c.textContent=countLabel(x);syncChips(i)}updateScanItem(i)}
 function stepScanG(i,d){const x=scan.items[i];const step=x.grams>=200?25:10;x.grams=Math.max(0,Math.round(x.grams/step)*step+d*step);$('sg'+i).value=x.grams;updateScanItem(i)}
 function scaleScan(i,f){const x=scan.items[i];x.grams=Math.max(1,Math.round(x.baseGrams*f));$('sg'+i).value=x.grams;updateScanItem(i)}
 function setPer100(i,k,v){scan.items[i].per100[k]=Math.max(0,num(v));if(scan.items[i].source==='AI estimate'&&scan.items[i].ai)scan.items[i].source='Edited';updateScanItem(i)}
@@ -701,7 +720,8 @@ async function runScan(){
     if(!scan||scan.status!=='loading')return; // user closed the sheet
     if(!(data.items||[]).length)throw Error((data.meal_notes||'No food was found in this photo.')+' Try a clearer photo, or search instead.');
     scan.items=data.items.map(x=>{const n=x.estimated_nutrition||{};const per100={kcal:num(n.kcal),p:num(n.protein_g),c:num(n.carbs_g),f:num(n.fat_g)};const g=Math.max(1,Math.round(num(x.estimated_grams)||100));
-      return {name:x.name,emoji:emojiFor(x.name),portion:x.portion||'',grams:g,baseGrams:g,per100,ai:{...per100},source:'AI estimate',confidence:x.confidence||'low',notes:x.notes||'',include:true,open:false,matches:null}});
+      const unitG=num(x.grams_per_unit),cnt=num(x.count);
+      return {name:x.name,emoji:emojiFor(x.name),portion:x.portion||'',grams:g,baseGrams:g,count:unitG&&cnt?cnt:null,unit:unitG&&cnt?String(x.unit||'serving'):null,unitG:unitG&&cnt?unitG:null,per100,ai:{...per100},source:'AI estimate',confidence:x.confidence||'low',notes:x.notes||'',include:true,open:false,matches:null}});
     scan.mealNotes=data.meal_notes||'';scan.uncertainty=data.uncertainty||'';scan.status='done';
   }catch(e){if(!scan)return;scan.status='error';scan.error=e.message==='Failed to fetch'?'No internet connection. Check your connection and try again.':e.message}
   drawScan();
@@ -710,7 +730,7 @@ function logScan(){
   const list=S.log[view]=S.log[view]||[];let n=0;
   const thumb=/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(scan.thumb||'')?scan.thumb:null;
   scan.items.forEach(x=>{if(!x.include||!(x.grams>0)||!x.name)return;
-    list.push({id:uid(),t:Date.now(),name:x.name,emoji:x.emoji||emojiFor(x.name),thumb,meal:scan.meal,portion:'per 100 g',basisGrams:100,mode:'grams',amount:x.grams,qty:x.grams/100,
+    list.push({id:uid(),t:Date.now(),name:x.name,emoji:x.emoji||emojiFor(x.name),thumb,meal:scan.meal,portion:'per 100 g',basisGrams:100,mode:'grams',amount:x.grams,qty:x.grams/100,countLabel:x.unitG?countLabel(x):null,countGrams:x.grams,
       cal:x.per100.kcal,p:x.per100.p,c:x.per100.c,f:x.per100.f,source:x.source,ai:x.source==='AI estimate'||x.source==='Edited',confidence:x.confidence});n++});
   if(!n)return toast('Select at least one item');
   const label=MEALS.find(m=>m.id===scan.meal)?.label||'diary';persist();render();closeModal();toast(`${n} item${n>1?'s':''} logged to ${label}`);
