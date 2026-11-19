@@ -18,7 +18,7 @@ module.exports=async(req,res)=>{
   if(!ALLOWED.has(mimeType))return res.status(400).json({error:'Unsupported image format. Use JPEG, PNG or WebP.'});
   const raw=imageBase64.replace(/^data:[^,]+,/,'').replace(/\s/g,'');
   if(!/^[A-Za-z0-9+/]*={0,2}$/.test(raw))return res.status(400).json({error:'Image data is invalid.'});
-  const r=await generateJson([{text:buildPrompt(notes)},{inline_data:{mime_type:mimeType,data:raw}}]);
+  const r=await generateJson([{text:buildPrompt(notes)},{inline_data:{mime_type:mimeType,data:raw}}],{timeoutMs:55000,perModelMs:28000});
   if(!r.ok)return res.status(r.code).json({error:r.error});
   const parsed=r.data;
   const items=(Array.isArray(parsed.items)?parsed.items:[]).slice(0,15).map(x=>{const n=x.estimated_nutrition||{};

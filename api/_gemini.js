@@ -29,7 +29,8 @@ function extractJson(text){
 }
 
 // Returns {ok:true,data,model} or {ok:false,code,error}
-async function generateJson(parts,{timeoutMs=45000,maxOutputTokens=8192}={}){
+async function generateJson(parts,{timeoutMs=45000,maxOutputTokens=8192,perModelMs=22000}={}){
+  const deadline=Date.now()+timeoutMs;
   const key=getKey();
   if(!key) return {ok:false,code:503,error:'AI features are not set up yet. Add GEMINI_API_KEY in Vercel → Settings → Environment Variables, then redeploy.'};
   // Low thinking keeps answers fast (the default 'latest' Flash thinks a lot and can take 25 s+).
@@ -38,8 +39,14 @@ async function generateJson(parts,{timeoutMs=45000,maxOutputTokens=8192}={}){
   try{
     for(const model of MODELS){
       const url=`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
-      const call=thinking=>fetch(url,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:reqBody(thinking),signal:AbortSignal.timeout(timeoutMs)});
-      let r=await call(true);
+      const left=deadline-Date.now();if(left<4000)break;
+      const call=thinking=>fetch(url,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:reqBody(thinking),signal:AbortSignal.timeout(Math.min(perModelMs,deadline-Date.now()))});
+      let r;
+      try{r=await call(true);}catch(e){
+        const timeout=e&&(e.name==='TimeoutError'||e.name==='AbortError');
+        console.error('Gemini',model,timeout?'timed out':'request error',e.message);
+        lastErr={status:timeout?504:502,body:JSON.stringify({error:{message:timeout?'timeout':e.message}})};continue;
+      }
       if(r.status===400){const t=await r.clone().text();if(/thinking/i.test(t)){console.warn('Model rejected thinkingLevel, retrying without',model);r=await call(false);}}
       if(r.ok){
         const result=await r.json();
@@ -62,11 +69,28 @@ async function generateJson(parts,{timeoutMs=45000,maxOutputTokens=8192}={}){
     const timeout=e&&(e.name==='TimeoutError'||e.name==='AbortError');
     return {ok:false,code:timeout?504:502,error:timeout?'Gemini took too long to answer. Please try again.':'Could not reach Gemini. Please try again.'};
   }
+  if(!lastErr)return {ok:false,code:504,error:'Gemini took too long to answer. Please try again.'};
+  if(lastErr.status===504)return {ok:false,code:504,error:'Gemini is responding very slowly right now. Please try again in a minute.'};
   const e=explain(lastErr.status,lastErr.body);
   return {ok:false,...e};
 }
 
-// Lightweight check used by /api/health?check=1
+// Real end-to-end test: tiny generateContent per model, reports status + latency (used by /api/health?check=1)
+async function deepCheck(){
+  const key=getKey(); if(!key) return {ok:false,error:'GEMINI_API_KEY not set'};
+  const results=await Promise.all(MODELS.map(async model=>{
+    const t=Date.now();
+    try{
+      const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},
+        body:JSON.stringify({contents:[{role:'user',parts:[{text:'Reply with exactly {"ok":true}'}]}],generationConfig:{maxOutputTokens:512,responseMimeType:'application/json',thinkingConfig:{thinkingLevel:'low'}}}),signal:AbortSignal.timeout(20000)});
+      const body=await r.text();let msg='';try{msg=JSON.parse(body).error?.message||''}catch(_){}
+      return {model,status:r.status,ms:Date.now()-t,ok:r.ok,error:r.ok?undefined:(msg||body).slice(0,300)};
+    }catch(e){return {model,ok:false,ms:Date.now()-t,error:e.name==='TimeoutError'?'timed out after 20 s':e.message}}
+  }));
+  return {ok:results.some(r=>r.ok),results};
+}
+
+// Lightweight check
 async function checkModels(){
   const key=getKey(); if(!key) return {ok:false,error:'GEMINI_API_KEY not set'};
   const out=[];
@@ -81,4 +105,4 @@ async function checkModels(){
   return {ok:false,tried:out,error:'None of the Gemini models are available to this key.'};
 }
 
-module.exports={generateJson,checkModels,getKey,MODELS};
+module.exports={generateJson,checkModels,deepCheck,getKey,MODELS};
