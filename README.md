@@ -11,6 +11,12 @@ FitFirst is a phone-first calorie tracker built as a Vercel static app plus serv
 - Katori dataset importer (CC BY 4.0) for 128 dish/preparation rows, once the CSV is downloaded from the source.
 - Supabase SQL schema and a seed script for FitFirst starter foods.
 
+## v0.6 — faster scans, cleaner data
+- Photo scan ~5–8 s instead of 20–25 s: `gemini-flash-lite-latest` first (measured 3.6 s; `gemini-flash-latest` was timing out), 1024 px photos, low thinking, per-model time limits.
+- `/api/health?check=1&models=a,b` tests any Gemini model end-to-end.
+- Three bundled Indian databases: Katori (128 dish preparations, CC BY 4.0), INDB (1,014 recipes, frying-oil and macro errors corrected rather than removed) and IFCT 2017 (528 core foods with local-language names), plus live Open Food Facts (India-first) and USDA. Indian spelling variants (toor/arhar, dahi/curd…) and better ranking.
+- Search screen fits phones: no auto keyboard, one-row actions, full-height list.
+
 ## v0.5 — real food databases
 Food search now queries real databases in parallel instead of relying on a hand-made list:
 - **INDB (Indian Nutrient Databank)** — 1,014 Indian recipes with real serving sizes (1 idli = 25 g, 1 dosa…), bundled.

@@ -1,5 +1,7 @@
 // Shared Gemini helper (files starting with _ are not exposed as Vercel routes).
-const MODELS = [process.env.GEMINI_VISION_MODEL, 'gemini-flash-latest', 'gemini-2.5-flash', 'gemini-flash-lite-latest']
+// Order matters: first model that answers wins. Measured on the live site (Nov 2026):
+// flash-lite-latest ≈ 3.6 s, flash-latest timed out (>20 s), 2.5-flash retired for new users.
+const MODELS = [process.env.GEMINI_VISION_MODEL, 'gemini-flash-lite-latest', 'gemini-3.8-flash', 'gemini-flash-latest']
   .filter((m, i, a) => m && a.indexOf(m) === i);
 
 function getKey(){ return String(process.env.GEMINI_API_KEY||'').trim().replace(/^["']|["']$/g,''); }
@@ -76,9 +78,10 @@ async function generateJson(parts,{timeoutMs=45000,maxOutputTokens=8192,perModel
 }
 
 // Real end-to-end test: tiny generateContent per model, reports status + latency (used by /api/health?check=1)
-async function deepCheck(){
+async function deepCheck(extra=[]){
   const key=getKey(); if(!key) return {ok:false,error:'GEMINI_API_KEY not set'};
-  const results=await Promise.all(MODELS.map(async model=>{
+  const list=[...new Set([...MODELS,...extra.filter(m=>/^gemini-[a-z0-9.\-]+$/i.test(m)).slice(0,5)])];
+  const results=await Promise.all(list.map(async model=>{
     const t=Date.now();
     try{
       const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},
