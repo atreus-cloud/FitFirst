@@ -10,7 +10,7 @@ medu vada 50 g; samosa 90 g; pakora 25 g; kachori 60 g; pani puri (1 puri with f
 gulab jamun 35 g; rasgulla 50 g; ladoo 30 g; barfi piece 30 g; jalebi 30 g; biscuit 7 g; cookie 15 g;
 banana 120 g; apple 180 g; orange 130 g; mango 200 g; chicken leg piece 140 g; chicken tikka piece 25 g; fish fry piece 100 g; paneer tikka cube 25 g;
 katori (small bowl ~150 ml) of dal/sambar/curry/sabzi 150 g; katori of rice/biryani/pulao 120 g; katori of curd 150 g; full plate of rice/biryani 300 g;
-cup (240 ml) drink 240 g; glass 250 g; tea/coffee cup 150 g; tablespoon 15 g; teaspoon 5 g; chutney (1 tbsp) 15 g.`;
+cup of chai/coffee (small Indian cup or mug, ~120 ml) 120 g; large mug 250 g; glass 250 g; tablespoon 15 g; teaspoon 5 g; chutney (1 tbsp) 15 g.`;
 
 function buildPrompt(notes){
   return `You are the food-vision component of FitFirst, a calorie-tracking app used mostly in India.
@@ -24,10 +24,16 @@ PORTIONS — work them out, don't guess a round number:
 5. If there is no size cue at all, assume one typical single serving.
 ${REFERENCE}
 
+LOOK-ALIKES — decide carefully, and when you are not sure list the next most likely identities in "alternatives":
+- Milk coffee / filter coffee: darker brown, dense ring of fine bubbles or foam, often a steel tumbler/dabara or mug. Chai: lighter tan/orange-beige, often a milk skin, tea-leaf or spice specks, little foam. Black coffee/tea: no milk colour.
+- Dosa vs uttapam vs appam; idli vs dhokla; curd vs raita vs buttermilk; sambar vs rasam vs dal; pulao vs biryani vs fried rice; roti vs paratha vs naan; paneer vs tofu; fried chicken vs chicken 65 vs pakora.
+Give 0–2 alternatives per item (none when you are certain), each with its own per-100 g nutrition.
+
 NUTRITION: approximate values PER 100 GRAMS (kcal, protein_g, carbs_g, fat_g, fiber_g, sugar_g, sodium_mg); kcal ≈ 4*protein + 4*carbs + 9*fat (±15%). Account for visible oil/ghee/butter. For packaged items do not guess a brand label.
 
 Return ONLY JSON:
-{"items":[{"name":"boiled egg","count":1,"unit":"egg","grams_per_unit":50,"estimated_grams":50,"portion":"1 egg, halved","confidence":"high","notes":"short assumption","estimated_nutrition":{"kcal":155,"protein_g":12.6,"carbs_g":1.1,"fat_g":10.6,"fiber_g":0,"sugar_g":1.1,"sodium_mg":124}}],"meal_notes":"one short sentence","uncertainty":"main uncertainty, short"}
+{"items":[{"name":"boiled egg","count":1,"unit":"egg","grams_per_unit":50,"estimated_grams":50,"portion":"1 egg, halved","confidence":"high","notes":"short assumption","estimated_nutrition":{"kcal":155,"protein_g":12.6,"carbs_g":1.1,"fat_g":10.6,"fiber_g":0,"sugar_g":1.1,"sodium_mg":124},"alternatives":[]}],"meal_notes":"one short sentence","uncertainty":"main uncertainty, short"}
+"alternatives" items look like {"name":"<other likely food>","estimated_nutrition":{"kcal":0,"protein_g":0,"carbs_g":0,"fat_g":0}} (per 100 g). The example above only shows the format; describe what is actually in the photo.
 If no food is visible, return an empty items array and explain in meal_notes.
 User notes (trust these over the photo for quantities and ingredients): ${String(notes||'none').slice(0,400)}`;
 }
@@ -46,13 +52,16 @@ module.exports=async(req,res)=>{
     const n=x.estimated_nutrition||{};
     const count=Math.round(clean(x.count,100)*4)/4;          // to the nearest quarter
     const unitG=clean(x.grams_per_unit,2000);
-    const unit=String(x.unit||'').trim().toLowerCase().slice(0,20);
+    let unit=String(x.unit||'').trim().toLowerCase().replace(/^(small |large |big )/,'').replace(/^(tea|coffee|tea\/coffee|chai) ?(cup|mug)$/,'$2').replace(/\s*\(.*\)$/,'');
+    if(unit.length>12)unit='serving';
     // trust count x weight-per-unit over a free-form gram guess
     const grams=count>0&&unitG>0?Math.round(count*unitG):(clean(x.estimated_grams,3000)||100);
     return {name:String(x.name||'Unidentified food').slice(0,100),portion:String(x.portion||'').slice(0,60),
       count:count>0&&unitG>0?count:null,unit:count>0&&unitG>0&&unit?unit:null,grams_per_unit:count>0&&unitG>0?unitG:null,
       estimated_grams:grams,confidence:['low','medium','high'].includes(x.confidence)?x.confidence:'low',notes:String(x.notes||'').slice(0,250),
-      estimated_nutrition:{kcal:clean(n.kcal,1000),protein_g:clean(n.protein_g,100),carbs_g:clean(n.carbs_g,100),fat_g:clean(n.fat_g,100),fiber_g:clean(n.fiber_g,100),sugar_g:clean(n.sugar_g,100),sodium_mg:clean(n.sodium_mg,10000)}};
+      estimated_nutrition:{kcal:clean(n.kcal,1000),protein_g:clean(n.protein_g,100),carbs_g:clean(n.carbs_g,100),fat_g:clean(n.fat_g,100),fiber_g:clean(n.fiber_g,100),sugar_g:clean(n.sugar_g,100),sodium_mg:clean(n.sodium_mg,10000)},
+      alternatives:(Array.isArray(x.alternatives)?x.alternatives:[]).slice(0,2).map(a=>{const m=a&&a.estimated_nutrition||{};return {name:String(a&&a.name||'').slice(0,80),
+        estimated_nutrition:{kcal:clean(m.kcal,1000),protein_g:clean(m.protein_g,100),carbs_g:clean(m.carbs_g,100),fat_g:clean(m.fat_g,100)}}}).filter(a=>a.name&&a.estimated_nutrition.kcal>0&&a.name.toLowerCase()!==String(x.name||'').toLowerCase())};
   });
   res.status(200).json({items,meal_notes:String(parsed.meal_notes||''),uncertainty:String(parsed.uncertainty||''),model:r.model,notice:'Foods, portions and nutrition are AI estimates. Review before saving.'});
 };

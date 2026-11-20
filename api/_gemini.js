@@ -44,7 +44,13 @@ async function generateJson(parts,{timeoutMs=45000,maxOutputTokens=8192,perModel
       const left=deadline-Date.now();if(left<4000)break;
       const call=thinking=>fetch(url,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:reqBody(thinking),signal:AbortSignal.timeout(Math.min(perModelMs,deadline-Date.now()))});
       let r;
-      try{r=await call(true);}catch(e){
+      try{
+        r=await call(true);
+        // the fast model sometimes returns a momentary 503/429 — retry it once before falling back to slower models
+        if((r.status>=500||r.status===429)&&model===MODELS[0]&&deadline-Date.now()>15000){
+          console.warn('Gemini',model,r.status,'— retrying once');await new Promise(z=>setTimeout(z,1500));r=await call(true);
+        }
+      }catch(e){
         const timeout=e&&(e.name==='TimeoutError'||e.name==='AbortError');
         console.error('Gemini',model,timeout?'timed out':'request error',e.message);
         lastErr={status:timeout?504:502,body:JSON.stringify({error:{message:timeout?'timeout':e.message}})};continue;
