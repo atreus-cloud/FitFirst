@@ -119,6 +119,10 @@ h1{font-size:29px;letter-spacing:-.7px;margin:23px 0 12px}h2{font-size:21px;marg
 .chips .smacro{margin-left:auto;align-self:center}
 .smacro{flex:1;text-align:right;color:var(--muted);font-size:12px}
 .sdetails{border-top:1px solid #26262c;margin-top:8px;padding-top:8px}
+.actcard{padding:14px 16px}.actrow{display:flex;gap:10px;align-items:center}.actstat{flex:1;min-width:0}.actstat b{font-size:20px;display:block}.actstat small{color:var(--muted);font-size:12px}
+.wk{display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid #26262c;font-size:14px}.wk:first-of-type{margin-top:10px}.wk span{font-size:20px}.wk small{color:var(--muted);display:block;font-size:12px}
+.copybox{display:flex;gap:8px;align-items:center;background:#09090b;border:1px solid var(--line);border-radius:12px;padding:10px;font-size:12px;word-break:break-all;margin:8px 0}
+.steps ol{padding-left:20px;margin:8px 0}.steps li{margin:8px 0;font-size:14px}.steps b{color:white}
 .alts{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:8px 0 0 38px;color:var(--muted);font-size:13px}
 .addmissing{width:100%;background:none;border:1px dashed #444;border-radius:16px;padding:13px;color:var(--muted);margin:4px 0 10px}
 .stickybar{position:sticky;bottom:calc(-21px - env(safe-area-inset-bottom));margin:10px -21px calc(-21px - env(safe-area-inset-bottom));padding:14px 21px calc(21px + env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--panel) 28%)}
@@ -146,6 +150,7 @@ h1{font-size:29px;letter-spacing:-.7px;margin:23px 0 12px}h2{font-size:21px;marg
         <div class="macro"><b id="fatleft">65g</b><small id="fatlbl">Fat left</small><div class="bar"><i id="fatbar"></i></div></div>
       </div>
     </div>
+    <div class="card actcard hidden" id="actCard"></div>
     <div class="quickgrid">
       <button class="quick" onclick="openScan()">📷<b>Scan meal photo</b><small>AI food & portions</small></button>
       <button class="quick" onclick="openSearch()">⌕<b>Search foods</b><small>Indian & international</small></button>
@@ -169,7 +174,7 @@ h1{font-size:29px;letter-spacing:-.7px;margin:23px 0 12px}h2{font-size:21px;marg
       <div class="chart" id="chart"></div>
       <div class="chartlabels" id="chartLabels"></div>
       <div class="legend"><span><i style="background:var(--green)"></i>On target (±10%)</span><span><i style="background:var(--gold)"></i>Under</span><span><i style="background:var(--pink)"></i>Over</span></div>
-      <p class="muted small" id="macroAvg"></p>
+      <p class="muted small" id="macroAvg"></p><p class="muted small" id="stepAvg"></p>
     </div>
     <div class="card">
       <div class="muted">Current weight</div>
@@ -225,6 +230,12 @@ h1{font-size:29px;letter-spacing:-.7px;margin:23px 0 12px}h2{font-size:21px;marg
       <label class="muted">Diet preference<select class="field" id="diet"><option>Non-vegetarian</option><option>Vegetarian</option><option>Eggetarian</option><option>Vegan</option></select></label>
       <label class="muted">Cuisine preference<input class="field" id="cuisine" placeholder="South Indian, Tamil, etc."></label>
       <button class="primary" onclick="savePrefs()">Save preferences</button>
+    </div>
+    <div class="card">
+      <h2>Samsung Health</h2>
+      <p class="muted small" id="hcStatus" style="margin:6px 0 10px">Bring in steps, workouts and calories burned automatically.</p>
+      <div class="rowbtns"><button class="btn sm" onclick="openHealthSetup()">Set up / show link</button><button class="btn sm" onclick="syncActivity(true)">↻ Refresh now</button></div>
+      <label class="lbl" style="margin-top:12px">Daily step goal<input class="field" id="stepGoal" type="number" inputmode="numeric" onchange="S.prefs.stepGoal=Math.max(1000,num(this.value))||8000;persist();renderHome()"></label>
     </div>
     <div class="card">
       <h2>My foods</h2>
@@ -305,7 +316,7 @@ function totals(entries){return entries.reduce((t,e)=>{const q=num(e.qty);t.cal+
 function dayStatus(k){const n=dayEntries(k).length;if(!n)return '';const c=totals(dayEntries(k)).cal,g=S.goal.cal;if(Math.abs(c-g)<=g*.1)return 'hit';if(c>g*1.1)return 'over';return 'logged'}
 
 /* ---------- Rendering ---------- */
-function render(){renderHome();renderProgress();renderMyFoods()}
+function render(){renderHome();renderProgress();renderMyFoods();renderHealthStatus()}
 function renderHome(){
   const t=totals(dayEntries(view)),g=S.goal,left=g.cal-t.cal,isToday=view===todayKey();
   $('dayTitle').textContent=dayLabel(view);$('todayBtn').classList.toggle('hidden',isToday);
@@ -327,6 +338,7 @@ function renderHome(){
     return `<div class="card mealcard"><div class="mealhead"><span style="font-size:20px">${m.emoji}</span><b>${m.label}</b><small>${items.length?fmt(mt.cal)+' kcal':''}</small><button class="round" onclick="openSearch('${m.id}')" aria-label="Add to ${m.label}">＋</button></div>${rows}${copy}</div>`;
   }).join('');
   $('insight').innerHTML=insightHTML(t,g,entries.length);
+  renderActivity();
 }
 function portionText(e){if(e.mode==='grams'&&e.amount)return `${e.countLabel&&Math.abs(e.amount-num(e.countGrams||e.amount))<1?e.countLabel+' · ':''}${r1(e.amount)} g${e.source?' · '+e.source:''}`;const q=r1(num(e.qty));return `${q===1?'':q+' × '}${e.portion||'1 serving'}`}
 function insightHTML(t,g,count){
@@ -355,6 +367,8 @@ function renderProgress(){
   $('chartTarget').textContent=`Target ${fmt(g)} kcal`;
   $('chart').innerHTML=`<div class="target" style="bottom:${g/max*100}%"></div>`+days.map((k,i)=>{const c=vals[i].cal,st=dayStatus(k);return `<div class="col" onclick="selectDate('${k}');tab('home')" title="${fmt(c)} kcal"><div class="b ${st==='hit'?'hit':st==='over'?'over':c?'under':''}" style="height:${c/max*100}%"></div></div>`}).join('');
   $('chartLabels').innerHTML=days.map((k,i)=>`<span>${k===today?'Today':parseKey(k).toLocaleDateString('en-IN',{weekday:'short'})}<br><b style="color:white;font-size:11px">${vals[i].cal?fmt(vals[i].cal):'–'}</b></span>`).join('');
+  const stepDays=days.map(k=>(S.activity||{})[k]?.steps).filter(v=>v>0);
+  $('stepAvg').textContent=stepDays.length?`Average ${fmt(stepDays.reduce((a,b)=>a+b,0)/stepDays.length)} steps/day over ${stepDays.length} day${stepDays.length>1?'s':''} (Samsung Health)`:'';
   if(logged.length){const a=logged.reduce((s,v)=>({p:s.p+v.p,c:s.c+v.c,f:s.f+v.f}),{p:0,c:0,f:0}),n=logged.length;$('macroAvg').textContent=`Average on logged days: ${fmt(a.p/n)}g protein (target ${S.goal.p}) · ${fmt(a.c/n)}g carbs · ${fmt(a.f/n)}g fat`}else $('macroAvg').textContent='Log some food to see your weekly averages.';
   // weight
   const ws=[...S.weights].sort((a,b)=>a.date.localeCompare(b.date)),cur=ws.at(-1)?.kg??S.goal.start,{start,target}=S.goal;
@@ -364,7 +378,7 @@ function renderProgress(){
   const diff=r1(Math.abs(cur-target));
   $('weightinfo').textContent=`Start ${start} kg · Goal ${target} kg · ${diff?diff+' kg to go':'Goal reached 🎉'}`;
   $('weightChart').innerHTML=weightChart(ws.slice(-30));
-  $('weightlist').innerHTML=ws.length?ws.slice().reverse().map(w=>`<div class="wrow"><span>${parseKey(w.date).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</span><span><b style="color:white">${w.kg} kg</b><button onclick="deleteWeight('${w.date}')" aria-label="Delete">×</button></span></div>`).join(''):'No entries yet.';
+  $('weightlist').innerHTML=ws.length?ws.slice().reverse().map(w=>`<div class="wrow"><span>${parseKey(w.date).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</span><span><b style="color:white">${w.kg} kg</b>${w.src?' <small class="muted">⌚</small>':''}<button onclick="deleteWeight('${w.date}')" aria-label="Delete">×</button></span></div>`).join(''):'No entries yet.';
   // badges
   const B=badges(streak),earned=B.filter(b=>b.ok).length;
   $('badgeCount').textContent=`${earned}/${B.length}`;
@@ -405,7 +419,7 @@ function fillProfile(){
 }
 
 /* ---------- Navigation ---------- */
-function tab(id){['home','progress','profile'].forEach(x=>$(x).classList.toggle('hidden',x!==id));document.querySelectorAll('.nav').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));if(id==='profile')fillProfile();window.scrollTo(0,0)}
+function tab(id){['home','progress','profile'].forEach(x=>$(x).classList.toggle('hidden',x!==id));document.querySelectorAll('.nav').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));if(id==='profile'){fillProfile();renderHealthStatus()}window.scrollTo(0,0)}
 function selectDate(k){view=k;renderHome()}
 function shiftWeek(n){view=addDays(view,7*n);renderHome()}
 function chooseDate(){$('modal').innerHTML=`<h2>Go to date</h2><input class="field" type="date" id="pickDate" value="${view}" max="${addDays(todayKey(),1)}"><button class="primary" onclick="const v=$('pickDate').value;if(v){selectDate(v);closeModal()}">Show this day</button>`;showModal()}
@@ -749,6 +763,66 @@ function logScan(){
   const label=MEALS.find(m=>m.id===scan.meal)?.label||'diary';persist();render();closeModal();toast(`${n} item${n>1?'s':''} logged to ${label}`);
 }
 
+/* ---------- Samsung Health / Health Connect activity ---------- */
+const EX_EMOJI=[[/run|jog/i,'🏃'],[/walk|hik/i,'🚶'],[/cycl|bik/i,'🚴'],[/swim/i,'🏊'],[/yoga|pilates|stretch/i,'🧘'],[/weight|strength|gym|lift/i,'🏋️'],[/badminton|tennis|squash|cricket|football|basketball|sport/i,'🏸'],[/danc/i,'💃']];
+const exEmoji=t=>{for(const [re,e] of EX_EMOJI)if(re.test(t||''))return e;return '🔥'};
+function syncKey(){if(!S.syncKey){const a=new Uint8Array(16);crypto.getRandomValues(a);S.syncKey=[...a].map(b=>b.toString(16).padStart(2,'0')).join('');persist()}return S.syncKey}
+const webhookURL=()=>`${location.origin}/api/activity?key=${syncKey()}`;
+let actBusy=false;
+async function syncActivity(manual){
+  if(!S.syncKey||actBusy)return;            // not set up yet
+  if(!manual&&S.actFetchedAt&&Date.now()-S.actFetchedAt<5*60*1000)return;
+  actBusy=true;
+  try{
+    const r=await fetch(`/api/activity?key=${S.syncKey}&days=30&to=${todayKey()}`);const d=await r.json().catch(()=>({}));
+    if(!r.ok)throw Error(d.error||'Sync failed');
+    S.activity=d.days||{};S.actLast=d.lastSync||null;S.actFetchedAt=Date.now();
+    // weigh-ins from your scale/watch fill in days you haven't logged yourself
+    let added=0;for(const [date,day] of Object.entries(S.activity)){if(day.weightKg&&!S.weights.some(w=>w.date===date)){S.weights.push({date,kg:day.weightKg,src:'Health Connect'});added++}}
+    persist();render();
+    if(manual)toast(S.actLast?`Synced · last data from phone ${timeAgo(S.actLast.at)}`:'Connected — waiting for the first data from HC Webhook');
+  }catch(e){if(manual)toast(e.message==='Failed to fetch'?'No connection':e.message)}
+  finally{actBusy=false}
+}
+function timeAgo(iso){const m=Math.round((Date.now()-new Date(iso))/60000);return m<1?'just now':m<60?m+' min ago':m<1440?Math.round(m/60)+' h ago':Math.round(m/1440)+' d ago'}
+function renderActivity(){
+  const card=$('actCard');if(!card)return;
+  const day=(S.activity||{})[view];
+  if(!S.syncKey||!day){card.classList.add('hidden');return}
+  const goal=S.prefs.stepGoal||8000,st=day.steps||0;
+  card.classList.remove('hidden');
+  card.innerHTML=`<div class="actrow">
+      <div class="actstat"><b>${fmt(st)}</b><small>steps · goal ${fmt(goal)}</small><div class="bar"><i style="width:${Math.min(100,st/goal*100)}%;background:var(--green)"></i></div></div>
+      <div class="actstat" style="text-align:right"><b>${day.activeKcal!=null?fmt(day.activeKcal):'–'}</b><small>kcal burned (active)</small></div>
+    </div>
+    ${(day.workouts||[]).map(w=>`<div class="wk"><span>${exEmoji(w.type)}</span><div>${safe(w.title||w.type)}<small>${w.minutes?w.minutes+' min':''}${w.distanceM?' · '+r1(w.distanceM/1000)+' km':''}${w.start?' · '+new Date(w.start).toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit'}):''}</small></div></div>`).join('')}
+    <small class="muted" style="display:block;margin-top:8px">From Samsung Health${S.actLast?' · synced '+timeAgo(S.actLast.at):''} · not added to your food budget</small>`;
+}
+function renderHealthStatus(){
+  const el=$('hcStatus');if(!el)return;
+  $('stepGoal').value=S.prefs.stepGoal||8000;
+  if(!S.syncKey){el.textContent='Bring in steps, workouts and calories burned automatically.';return}
+  const days=Object.keys(S.activity||{}).length;
+  el.textContent=S.actLast?`Connected · last data ${timeAgo(S.actLast.at)} · ${days} day${days===1?'':'s'} of activity`:'Link created — waiting for the first sync from HC Webhook.';
+}
+function openHealthSetup(){
+  const url=webhookURL();
+  $('modal').innerHTML=`<h2>Connect Samsung Health</h2>
+    <div class="steps"><ol>
+      <li><b>Samsung Health → ⋮ → Settings → Health Connect</b>: turn it on and allow <b>Steps, Exercise, Active calories burned, Distance, Weight</b>.</li>
+      <li>Install <b>HC Webhook</b> from the Play Store, open it and grant the same permissions when Android asks.</li>
+      <li>In HC Webhook add a webhook and paste this link:
+        <div class="copybox"><span style="flex:1" id="hookUrl">${safe(url)}</span><button class="btn sm" onclick="copyHook()">Copy</button></div>
+        Keep it private — anyone with it can see your activity.</li>
+      <li>In HC Webhook set <b>Steps, Calories and Distance to “Daily”</b> (avoids counting phone + watch twice), choose a sync interval (e.g. every hour), then tap <b>Sync now</b>.</li>
+      <li>Come back here and tap <b>Refresh now</b>.</li>
+    </ol></div>
+    <p class="muted small">Calories burned are shown for information only and are not added to your food budget.</p>
+    <button class="primary" onclick="closeModal();syncActivity(true)">Done — refresh now</button>`;
+  showModal();renderHealthStatus();
+}
+async function copyHook(){try{await navigator.clipboard.writeText(webhookURL());toast('Link copied')}catch(e){const r=document.createRange();r.selectNodeContents($('hookUrl'));const s=getSelection();s.removeAllRanges();s.addRange(r);toast('Long-press to copy')}}
+
 /* ---------- Weight ---------- */
 function openWeight(){$('modal').innerHTML=`<h2>Log weight</h2><label class="lbl">Weight (kg)<input class="field" id="weightval" type="number" step="0.1" inputmode="decimal" placeholder="e.g. 84.6"></label><label class="lbl">Date<input class="field" id="weightdate" type="date" value="${todayKey()}" max="${todayKey()}"></label><button class="primary" onclick="saveWeight()">Save</button>`;showModal();setTimeout(()=>$('weightval')?.focus(),120)}
 function saveWeight(){const kg=r1(num($('weightval').value)),date=$('weightdate').value||todayKey();if(!kg||kg<25||kg>350)return toast('Enter a valid weight');S.weights=S.weights.filter(w=>w.date!==date).concat({date,kg});persist();render();closeModal();toast('Weight saved')}
@@ -790,8 +864,8 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 
 /* ---------- Start ---------- */
 let lastToday=todayKey();
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&todayKey()!==lastToday){if(view===lastToday)view=todayKey();lastToday=todayKey();render()}});
-persist();render();fillProfile();
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')syncActivity();if(document.visibilityState==='visible'&&todayKey()!==lastToday){if(view===lastToday)view=todayKey();lastToday=todayKey();render()}});
+persist();render();fillProfile();syncActivity();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
 </script>
 </body>

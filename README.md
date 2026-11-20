@@ -11,6 +11,14 @@ FitFirst is a phone-first calorie tracker built as a Vercel static app plus serv
 - Katori dataset importer (CC BY 4.0) for 128 dish/preparation rows, once the CSV is downloaded from the source.
 - Supabase SQL schema and a seed script for FitFirst starter foods.
 
+## v0.7 — Samsung Health activity
+Steps, workouts, active calories, distance and weigh-ins flow in automatically:
+Samsung Health → Health Connect (on the phone) → **HC Webhook** app (Play Store) → `POST /api/activity?key=…` → Upstash Redis → shown on Home (Activity card), Progress (average steps) and weight history.
+- Setup in the app: Profile → Samsung Health → *Set up / show link* (step-by-step guide + your private webhook link).
+- Server needs a free **Upstash for Redis** database (Vercel → Storage → Marketplace), connected to the project; it adds `KV_REST_API_URL` / `KV_REST_API_TOKEN` automatically.
+- Calories burned are display-only (not added to the food budget). Records are de-duplicated by id; set Steps/Calories/Distance to "Daily" in HC Webhook to avoid phone + watch double counting.
+- Photo scan: counts pieces × standard Indian portion weights, look-alike rules + "Or is it…" alternatives, retry on Gemini overload, your saved foods offered first.
+
 ## v0.6 — faster scans, cleaner data
 - Photo scan ~5–8 s instead of 20–25 s: `gemini-flash-lite-latest` first (measured 3.6 s; `gemini-flash-latest` was timing out), 1024 px photos, low thinking, per-model time limits.
 - `/api/health?check=1&models=a,b` tests any Gemini model end-to-end.
@@ -47,6 +55,7 @@ Next steps if you want them: Supabase Auth + cloud sync of `food_logs`/`weights`
 
 ## Vercel API routes
 - `GET /api/health` — reports provider configuration status without exposing secrets.
+- `GET|POST /api/activity?key=…` — Health Connect activity sync (HC Webhook posts here; the app reads per-day totals).
 - `GET /api/foods/search?q=...` — returns curated entries and optional Supabase, USDA and imported Katori data.
 - `POST /api/scan` — accepts `{ imageBase64, mimeType, notes }` and uses Gemini `generateContent` with image data.
 - `POST /api/estimate` — accepts `{ query }` and returns AI nutrition estimates for a typed food name.
