@@ -1,4 +1,4 @@
-# FitFirst Nutrition OS — mobile-first alpha
+# FitFirst Nutrition OS
 
 FitFirst is a phone-first calorie tracker built as a Vercel static app plus serverless API routes. It is intended to be used in portrait on Android; desktop is secondary.
 
